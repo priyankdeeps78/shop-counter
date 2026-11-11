@@ -73,14 +73,14 @@ export function ShopControls({ q, sort }: ShopQuery) {
       aria-label="Filter items"
       action="/shop"
       method="get"
-      className="mt-6 flex flex-wrap items-end gap-4"
+      className="card mt-8 flex flex-wrap items-end gap-4 p-4 sm:p-5"
       onSubmit={(event) => {
         event.preventDefault();
         navigateNow();
       }}
     >
-      <div className="flex flex-col gap-1">
-        <label htmlFor="shop-search" className="text-sm font-medium">
+      <div className="flex min-w-[220px] flex-1 flex-col gap-1.5">
+        <label htmlFor="shop-search" className="text-sm font-semibold">
           Search
         </label>
         <input
@@ -90,12 +90,13 @@ export function ShopControls({ q, sort }: ShopQuery) {
           type="search"
           defaultValue={q}
           autoComplete="off"
-          className="rounded border border-stone-400 px-2 py-1"
+          placeholder="Lamp, pen, stool…"
+          className="input"
           onChange={navigateSoon}
         />
       </div>
-      <div className="flex flex-col gap-1">
-        <label htmlFor="shop-sort" className="text-sm font-medium">
+      <div className="flex w-full flex-col gap-1.5 sm:w-56">
+        <label htmlFor="shop-sort" className="text-sm font-semibold">
           Sort
         </label>
         <select
@@ -104,7 +105,7 @@ export function ShopControls({ q, sort }: ShopQuery) {
           id="shop-sort"
           name="sort"
           defaultValue={sort}
-          className="rounded border border-stone-400 px-2 py-1"
+          className="select"
           onChange={navigateNow}
         >
           <option value="name">Name</option>
@@ -112,7 +113,7 @@ export function ShopControls({ q, sort }: ShopQuery) {
           <option value="price-desc">Price, high to low</option>
         </select>
       </div>
-      <button type="submit" className="rounded border border-stone-400 px-3 py-1">
+      <button type="submit" className="btn-secondary w-full sm:w-auto">
         Apply
       </button>
     </form>

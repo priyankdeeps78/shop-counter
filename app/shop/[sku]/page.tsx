@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ItemArt } from "@/components/item-art";
+import { StockBadge } from "@/components/stock-badge";
 import { getCatalog } from "@/lib/catalog";
 import { formatCents } from "@/lib/money";
 import { stockLabel } from "@/lib/shop-query";
@@ -47,31 +49,52 @@ export default async function ItemPage({ params }: PageProps<"/shop/[sku]">) {
   return (
     <article>
       <p>
-        <Link href="/shop" className="underline underline-offset-4">
-          Back to the shop
+        <Link href="/shop" className="inline-flex items-center gap-1.5 text-sm font-semibold text-moss hover:text-moss-dark">
+          <span aria-hidden="true">←</span> Back to the shop
         </Link>
       </p>
-      <h1 className="mt-4 text-2xl font-semibold">{item.name}</h1>
-      <dl className="mt-6 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2">
-        <dt className="font-medium">Price</dt>
-        <dd>{formatCents(item.priceCents)}</dd>
-        <dt className="font-medium">Remaining</dt>
-        <dd>{stockLabel(item.remaining)}</dd>
-        <dt className="font-medium">Extras</dt>
-        <dd>
-          {item.extras.length === 0 ? (
-            "None"
-          ) : (
-            <ul>
-              {item.extras.map((extra) => (
-                <li key={extra.code}>
-                  {extra.name} {formatCents(extra.priceCents)}
-                </li>
-              ))}
-            </ul>
+      <div className="mt-6 grid items-start gap-8 md:grid-cols-[1.1fr_1fr] md:gap-12">
+        <ItemArt sku={item.sku} className="card aspect-square" />
+        <div className="md:pt-6">
+          <p className="eyebrow">{item.remaining === null ? "Always in stock" : "Limited run"}</p>
+          <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight sm:text-5xl">{item.name}</h1>
+          <p className="mt-4 font-display text-3xl tabular-nums">
+            <span className="sr-only">Price </span>
+            {formatCents(item.priceCents)}
+          </p>
+
+          <dl className="card mt-8 divide-y divide-line">
+            <div className="flex items-center justify-between gap-4 px-5 py-4">
+              <dt className="font-semibold">Remaining</dt>
+              <dd>
+                <StockBadge remaining={item.remaining} />
+              </dd>
+            </div>
+            <div className="flex items-start justify-between gap-4 px-5 py-4">
+              <dt className="font-semibold">Extras</dt>
+              <dd className="text-right">
+                {item.extras.length === 0 ? (
+                  <span className="text-muted">None</span>
+                ) : (
+                  <ul className="flex flex-wrap justify-end gap-2">
+                    {item.extras.map((extra) => (
+                      <li key={extra.code} className="pill bg-clay-soft text-clay">
+                        {extra.name} {formatCents(extra.priceCents)}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </dd>
+            </div>
+          </dl>
+
+          {item.remaining !== null && (
+            <p className="mt-4 text-sm text-muted">
+              Lamps and stools are sold at the counter. Staff record the payment at the desk.
+            </p>
           )}
-        </dd>
-      </dl>
+        </div>
+      </div>
     </article>
   );
 }

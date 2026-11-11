@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { PageHeader } from "@/components/page-header";
 import { formatCents } from "@/lib/money";
 import { DESK_SKUS, SEED_CATALOG } from "@/lib/seed";
 import { listPayments } from "@/lib/store";
@@ -20,13 +21,18 @@ const deskItems: DeskItem[] = SEED_CATALOG.filter((item) =>
 export default function DeskPage() {
   return (
     <>
-      <h1 className="text-2xl font-semibold">Staff desk</h1>
+      <PageHeader eyebrow="Staff only" title="Staff desk">
+        Check a counter payment, then record it once. Repeating a charge id never takes stock twice.
+      </PageHeader>
       <DeskForm items={deskItems} />
-      <section aria-labelledby="queue-heading" className="mt-10">
-        <h2 id="queue-heading" className="text-xl font-semibold">
-          Payment queue
-        </h2>
-        <Suspense fallback={<p className="mt-4">Loading payments…</p>}>
+      <section aria-labelledby="queue-heading" className="card mt-10 overflow-hidden">
+        <div className="flex items-baseline justify-between gap-4 border-b border-line px-6 py-4">
+          <h2 id="queue-heading" className="font-display text-2xl font-semibold">
+            Payment queue
+          </h2>
+          <p className="text-sm text-muted">This server, oldest first</p>
+        </div>
+        <Suspense fallback={<p className="px-6 py-8 text-muted">Loading payments…</p>}>
           <PaymentQueue />
         </Suspense>
       </section>
@@ -44,31 +50,33 @@ async function PaymentQueue() {
   const payments = listPayments();
 
   if (payments.length === 0) {
-    return <p className="mt-4">No payments recorded</p>;
+    return <p className="px-6 py-10 text-center text-muted">No payments recorded</p>;
   }
 
   return (
-    <div className="mt-4 overflow-x-auto">
+    <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
         <caption className="sr-only">Payments recorded on this server, oldest first</caption>
         <thead>
-          <tr className="border-b border-stone-300">
-            <th scope="col" className="py-2 pr-4">Email</th>
-            <th scope="col" className="py-2 pr-4">Item</th>
-            <th scope="col" className="py-2 pr-4">Total</th>
-            <th scope="col" className="py-2">Charge id</th>
+          <tr className="bg-paper/70 text-xs uppercase tracking-wider text-muted">
+            <th scope="col" className="px-6 py-3 font-semibold">Email</th>
+            <th scope="col" className="px-6 py-3 font-semibold">Item</th>
+            <th scope="col" className="px-6 py-3 text-right font-semibold">Total</th>
+            <th scope="col" className="px-6 py-3 font-semibold">Charge id</th>
           </tr>
         </thead>
         <tbody>
           {payments.map((p) => (
-            <tr key={p.externalChargeId} className="border-b border-stone-200">
-              <td className="py-2 pr-4">{p.email}</td>
-              <td className="py-2 pr-4">
+            <tr key={p.externalChargeId} className="border-t border-line">
+              <td className="px-6 py-3.5">{p.email}</td>
+              <td className="px-6 py-3.5 font-medium">
                 {p.itemName}
                 {p.extraCode ? ` with ${extraName(p.sku, p.extraCode)}` : ""}
               </td>
-              <td className="py-2 pr-4">{formatCents(p.totalCents)}</td>
-              <td className="py-2 font-mono">{p.externalChargeId}</td>
+              <td className="px-6 py-3.5 text-right font-semibold tabular-nums">{formatCents(p.totalCents)}</td>
+              <td className="px-6 py-3.5">
+                <code className="rounded-md bg-paper px-2 py-1 font-mono text-xs">{p.externalChargeId}</code>
+              </td>
             </tr>
           ))}
         </tbody>

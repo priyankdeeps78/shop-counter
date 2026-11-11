@@ -138,19 +138,28 @@ export function DeskForm({ items }: { items: DeskItem[] }) {
     }
   });
 
+  const noticeTone = {
+    success: "border-moss/30 bg-moss-soft text-moss-dark",
+    info: "border-honey-ink/25 bg-honey-soft text-honey-ink",
+    error: "border-danger/30 bg-danger-soft text-danger",
+  };
+
   return (
-    <>
+    <div className="mt-8 grid items-start gap-6 lg:grid-cols-[1.25fr_1fr]">
       <form
         noValidate
         onSubmit={onRecord}
         // Any edit makes an earlier preview out of date.
         onChange={() => setPreview(null)}
         aria-describedby="desk-intro"
-        className="mt-6 grid max-w-md gap-4"
+        className="card grid gap-5 p-6 sm:p-7"
       >
-        <p id="desk-intro" className="text-stone-700">
-          Record a payment taken for a lamp or a stool.
-        </p>
+        <div>
+          <h2 className="font-display text-2xl font-semibold">New payment</h2>
+          <p id="desk-intro" className="mt-1 text-sm text-muted">
+            Record a payment taken for a lamp or a stool.
+          </p>
+        </div>
 
         <Field label="Email" error={errors.email?.message}>
           {(props) => (
@@ -159,50 +168,53 @@ export function DeskForm({ items }: { items: DeskItem[] }) {
               {...register("email")}
               type="email"
               autoComplete="off"
-              className="rounded border border-stone-400 px-2 py-1"
+              placeholder="customer@example.com"
+              className="input"
             />
           )}
         </Field>
 
-        <Field label="Item" error={errors.sku?.message}>
-          {(props) => (
-            <select
-              {...props}
-              {...register("sku", {
-                onChange: (event) => {
-                  // Only the stool has a cushion: switching away clears it.
-                  const next = items.find((i) => i.sku === event.target.value);
-                  if (!next?.extras.length) setValue("extraCode", "");
-                },
-              })}
-              className="rounded border border-stone-400 px-2 py-1"
-            >
-              <option value="">Choose…</option>
-              {items.map((item) => (
-                <option key={item.sku} value={item.sku}>
-                  {item.name} ({formatCents(item.priceCents)})
-                </option>
-              ))}
-            </select>
-          )}
-        </Field>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field label="Item" error={errors.sku?.message}>
+            {(props) => (
+              <select
+                {...props}
+                {...register("sku", {
+                  onChange: (event) => {
+                    // Only the stool has a cushion: switching away clears it.
+                    const next = items.find((i) => i.sku === event.target.value);
+                    if (!next?.extras.length) setValue("extraCode", "");
+                  },
+                })}
+                className="select"
+              >
+                <option value="">Choose…</option>
+                {items.map((item) => (
+                  <option key={item.sku} value={item.sku}>
+                    {item.name} ({formatCents(item.priceCents)})
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
 
-        <Field label="Extra" error={errors.extraCode?.message}>
-          {(props) => (
-            <select {...props} {...register("extraCode")} className="rounded border border-stone-400 px-2 py-1">
-              <option value="">None</option>
-              {allExtras.map((extra) => (
-                <option
-                  key={extra.code}
-                  value={extra.code}
-                  disabled={!extrasForSku.some((e) => e.code === extra.code)}
-                >
-                  {extra.name} (+{formatCents(extra.priceCents)})
-                </option>
-              ))}
-            </select>
-          )}
-        </Field>
+          <Field label="Extra" error={errors.extraCode?.message}>
+            {(props) => (
+              <select {...props} {...register("extraCode")} className="select">
+                <option value="">None</option>
+                {allExtras.map((extra) => (
+                  <option
+                    key={extra.code}
+                    value={extra.code}
+                    disabled={!extrasForSku.some((e) => e.code === extra.code)}
+                  >
+                    {extra.name} (+{formatCents(extra.priceCents)})
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+        </div>
 
         <Field label="Charge id" error={errors.externalChargeId?.message} hint="For example ch_12345678">
           {(props) => (
@@ -212,65 +224,65 @@ export function DeskForm({ items }: { items: DeskItem[] }) {
               type="text"
               autoComplete="off"
               spellCheck={false}
-              className="rounded border border-stone-400 px-2 py-1 font-mono"
+              className="input font-mono"
             />
           )}
         </Field>
 
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={onPreview}
-            disabled={isSubmitting}
-            className="rounded border border-stone-500 px-4 py-2"
-          >
+        <div className="flex flex-wrap gap-3 border-t border-line pt-5">
+          <button type="button" onClick={onPreview} disabled={isSubmitting} className="btn-secondary">
             Preview
           </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="rounded bg-stone-900 px-4 py-2 text-white disabled:opacity-60"
-          >
+          <button type="submit" disabled={isSubmitting} className="btn-primary">
             Record payment
           </button>
         </div>
 
         <p
           role="status"
-          className={
-            notice?.tone === "error"
-              ? "text-red-700"
-              : notice?.tone === "success"
-                ? "text-green-800"
-                : "text-stone-800"
-          }
+          className={notice ? `rounded-xl border px-4 py-3 text-sm font-medium ${noticeTone[notice.tone]}` : "sr-only"}
         >
           {notice?.text}
         </p>
       </form>
 
-      <section aria-labelledby="preview-heading" className="mt-8 max-w-md rounded border border-stone-300 p-4">
-        <h2 id="preview-heading" className="text-xl font-semibold">
-          Payment preview
-        </h2>
+      <section
+        aria-labelledby="preview-heading"
+        className="card overflow-hidden lg:sticky lg:top-24"
+      >
+        <div className="border-b border-dashed border-line-strong bg-paper/60 px-6 py-4">
+          <h2 id="preview-heading" className="font-display text-xl font-semibold">
+            Payment preview
+          </h2>
+        </div>
         {preview ? (
-          <dl className="mt-3 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1">
-            <dt className="font-medium">Email</dt>
-            <dd>{preview.email}</dd>
-            <dt className="font-medium">Item</dt>
-            <dd>{preview.itemName}</dd>
-            <dt className="font-medium">Extra</dt>
-            <dd>{preview.extraName ?? "None"}</dd>
-            <dt className="font-medium">Total</dt>
-            <dd>{formatCents(preview.totalCents)}</dd>
-            <dt className="font-medium">Remaining after</dt>
-            <dd>{preview.remainingAfter ?? "Not stock-limited"}</dd>
+          <dl className="divide-y divide-line px-6 text-sm">
+            <PreviewRow label="Email">{preview.email}</PreviewRow>
+            <PreviewRow label="Item">{preview.itemName}</PreviewRow>
+            <PreviewRow label="Extra">{preview.extraName ?? "None"}</PreviewRow>
+            <PreviewRow label="Remaining after">{preview.remainingAfter ?? "Not stock-limited"}</PreviewRow>
+            <PreviewRow label="Total" strong>
+              {formatCents(preview.totalCents)}
+            </PreviewRow>
           </dl>
         ) : (
-          <p className="mt-3 text-stone-700">Press Preview to check a payment before recording it.</p>
+          <div className="px-6 py-10 text-center">
+            <p className="text-muted">Press Preview to check a payment before recording it.</p>
+          </div>
         )}
       </section>
-    </>
+    </div>
+  );
+}
+
+function PreviewRow({ label, strong, children }: { label: string; strong?: boolean; children: ReactNode }) {
+  return (
+    <div className={`flex items-baseline justify-between gap-4 py-3 ${strong ? "text-base" : ""}`}>
+      <dt className={strong ? "font-display text-lg font-semibold" : "text-muted"}>{label}</dt>
+      <dd className={strong ? "font-display text-2xl font-semibold tabular-nums" : "text-right font-medium"}>
+        {children}
+      </dd>
+    </div>
   );
 }
 
@@ -303,18 +315,19 @@ function Field({
   const describedBy = [hint && hintId, error && errorId].filter(Boolean).join(" ") || undefined;
 
   return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="font-medium">
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-sm font-semibold">
         {label}
       </label>
       {hint && (
-        <p id={hintId} className="text-sm text-stone-700">
+        <p id={hintId} className="text-xs text-muted">
           {hint}
         </p>
       )}
       {children({ id, "aria-invalid": Boolean(error), "aria-describedby": describedBy })}
       {error && (
-        <p id={errorId} className="text-sm text-red-700">
+        <p id={errorId} className="flex items-center gap-1.5 text-sm font-medium text-danger">
+          <span aria-hidden="true">●</span>
           {error}
         </p>
       )}

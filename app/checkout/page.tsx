@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/page-header";
 import { getCatalog } from "@/lib/catalog";
 import { CHECKOUT_SKUS } from "@/lib/seed";
 import { Checkout } from "./checkout";
@@ -23,7 +24,9 @@ export default async function CheckoutPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">Checkout</h1>
+      <PageHeader eyebrow="Stationery" title="Checkout">
+        The amount you see when you press Pay is the amount you are charged.
+      </PageHeader>
       <Checkout products={products} />
     </>
   );

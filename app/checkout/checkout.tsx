@@ -9,6 +9,7 @@ import {
   subtractLines,
   type CartLine,
 } from "@/lib/cart";
+import { ItemArt } from "@/components/item-art";
 import { formatCents } from "@/lib/money";
 import type { CheckoutAttempt, Order, PricedLine } from "@/lib/types";
 
@@ -86,59 +87,64 @@ export function Checkout({ products }: { products: Product[] }) {
     }
   }
 
+  const cartCount = cart.reduce((n, l) => n + l.qty, 0);
+
   return (
-    <div className="mt-6 grid gap-8">
-      <section aria-labelledby="products-heading">
-        <h2 id="products-heading" className="text-xl font-semibold">
+    <div className="mt-8 grid items-start gap-6 lg:grid-cols-[1.4fr_1fr]">
+      <section aria-labelledby="products-heading" className="card overflow-hidden">
+        <h2 id="products-heading" className="border-b border-line px-6 py-4 font-display text-2xl font-semibold">
           Products
         </h2>
-        <ul className="mt-3 divide-y divide-stone-200 border-y border-stone-200">
+        <ul className="divide-y divide-line">
           {products.map((product) => {
             const qty = qtyOf(product.sku);
             return (
-              <li key={product.sku} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                <span>
-                  <span className="font-medium">{product.name}</span>{" "}
-                  <span className="text-stone-700">{formatCents(product.priceCents)}</span>
+              <li key={product.sku} className="flex flex-wrap items-center gap-4 px-6 py-4">
+                <ItemArt sku={product.sku} className="h-16 w-16 shrink-0 rounded-xl" />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">{product.name}</span>
+                  <span className="text-sm text-muted">{formatCents(product.priceCents)} each</span>
                 </span>
                 {qty === 0 ? (
                   <button
                     type="button"
                     aria-label={`Add ${product.name}`}
                     onClick={() => changeQty(product.sku, 1)}
-                    className="rounded border border-stone-500 px-3 py-1"
+                    className="btn-secondary px-4 py-2"
                   >
-                    Add
+                    <span aria-hidden="true">+</span> Add
                   </button>
                 ) : (
-                  <span className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      aria-label={`Decrease ${product.name}`}
-                      onClick={() => changeQty(product.sku, qty - 1)}
-                      className="h-8 w-8 rounded border border-stone-500"
-                    >
-                      −
-                    </button>
-                    <label htmlFor={`qty-${product.sku}`} className="sr-only">
-                      Quantity of {product.name}
-                    </label>
-                    <output id={`qty-${product.sku}`} className="min-w-6 text-center">
-                      {qty}
-                    </output>
-                    <button
-                      type="button"
-                      aria-label={`Increase ${product.name}`}
-                      onClick={() => changeQty(product.sku, qty + 1)}
-                      className="h-8 w-8 rounded border border-stone-500"
-                    >
-                      +
-                    </button>
+                  <span className="flex items-center gap-3">
+                    <span className="inline-flex items-center rounded-full border border-line-strong bg-white p-1">
+                      <button
+                        type="button"
+                        aria-label={`Decrease ${product.name}`}
+                        onClick={() => changeQty(product.sku, qty - 1)}
+                        className="grid h-8 w-8 place-items-center rounded-full text-lg leading-none transition hover:bg-paper"
+                      >
+                        −
+                      </button>
+                      <label htmlFor={`qty-${product.sku}`} className="sr-only">
+                        Quantity of {product.name}
+                      </label>
+                      <output id={`qty-${product.sku}`} className="min-w-8 text-center font-semibold tabular-nums">
+                        {qty}
+                      </output>
+                      <button
+                        type="button"
+                        aria-label={`Increase ${product.name}`}
+                        onClick={() => changeQty(product.sku, qty + 1)}
+                        className="grid h-8 w-8 place-items-center rounded-full text-lg leading-none transition hover:bg-paper"
+                      >
+                        +
+                      </button>
+                    </span>
                     <button
                       type="button"
                       aria-label={`Remove ${product.name}`}
                       onClick={() => changeQty(product.sku, 0)}
-                      className="ml-2 underline underline-offset-4"
+                      className="text-sm font-semibold text-clay underline-offset-4 hover:underline"
                     >
                       Remove
                     </button>
@@ -148,78 +154,129 @@ export function Checkout({ products }: { products: Product[] }) {
             );
           })}
         </ul>
-        <p className="mt-4 text-lg">
-          <label htmlFor="cart-total" className="font-medium">
-            Cart total
-          </label>{" "}
-          <output id="cart-total">{formatCents(cartTotalCents(cart, priceOf))}</output>
-        </p>
-        <div className="mt-4 flex items-center gap-4">
+      </section>
+
+      <div className="grid gap-6 lg:sticky lg:top-24">
+        <section aria-labelledby="basket-heading" className="card p-6">
+          <h2 id="basket-heading" className="font-display text-2xl font-semibold">
+            Your basket
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            {cartCount === 0 ? "Nothing in it yet." : `${cartCount} ${cartCount === 1 ? "item" : "items"}`}
+          </p>
+          <p className="mt-5 flex items-baseline justify-between border-t border-line pt-4">
+            <label htmlFor="cart-total" className="font-semibold">
+              Cart total
+            </label>
+            <output id="cart-total" className="font-display text-3xl font-semibold tabular-nums">
+              {formatCents(cartTotalCents(cart, priceOf))}
+            </output>
+          </p>
           <button
             type="button"
             onClick={pay}
             disabled={busy !== null}
-            className="rounded bg-stone-900 px-4 py-2 text-white disabled:opacity-60"
+            className="btn-primary mt-5 w-full py-3 text-base"
           >
-            Pay
+            {busy === "pay" ? "Starting…" : "Pay"}
           </button>
-        </div>
-        <div role="alert" className="mt-2 text-red-700">
-          {error}
-        </div>
-      </section>
-
-      {attempt && (
-        <section aria-labelledby="attempt-heading" className="rounded border border-stone-400 p-4">
-          <h2 id="attempt-heading" className="text-xl font-semibold">
-            Payment in progress
-          </h2>
-          <Lines lines={attempt.lines} />
-          <p className="mt-3 text-lg">
-            <label htmlFor="amount-due" className="font-medium">
-              Amount due
-            </label>{" "}
-            <output id="amount-due">{formatCents(attempt.amountCents)}</output>
-          </p>
-          <p role="status" className="mt-2 font-medium text-amber-900">
-            {cartChanged ? CART_CHANGED_MESSAGE : ""}
-          </p>
-          <button
-            type="button"
-            onClick={complete}
-            disabled={busy !== null}
-            className="mt-3 rounded bg-stone-900 px-4 py-2 text-white disabled:opacity-60"
-          >
-            Complete payment
-          </button>
+          <div role="alert" className={error ? "mt-3 rounded-xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger" : ""}>
+            {error}
+          </div>
         </section>
-      )}
 
-      {order && (
-        <section aria-labelledby="order-heading" className="rounded border border-green-700 p-4">
-          <h2 id="order-heading" ref={orderHeading} tabIndex={-1} className="text-xl font-semibold">
-            Order placed
-          </h2>
-          <Lines lines={order.lines} />
-          <p className="mt-3 text-lg">
-            <label htmlFor="amount-charged" className="font-medium">
-              Amount charged
-            </label>{" "}
-            <output id="amount-charged">{formatCents(order.amountCents)}</output>
-          </p>
-          <p className="mt-1 text-sm text-stone-700">Order {order.orderId}</p>
-        </section>
-      )}
+        {attempt && (
+          <section aria-labelledby="attempt-heading" className="card overflow-hidden">
+            <div className="flex items-center justify-between gap-3 border-b border-dashed border-line-strong bg-honey-soft/60 px-6 py-4">
+              <h2 id="attempt-heading" className="font-display text-xl font-semibold">
+                Payment in progress
+              </h2>
+              <span className="pill bg-honey-soft text-honey-ink">
+                <span aria-hidden="true" className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
+                Awaiting
+              </span>
+            </div>
+            <div className="px-6 pb-6">
+              <Lines lines={attempt.lines} />
+              <p className="flex items-baseline justify-between border-t border-line pt-4">
+                <label htmlFor="amount-due" className="font-semibold">
+                  Amount due
+                </label>
+                <output id="amount-due" className="font-display text-3xl font-semibold tabular-nums">
+                  {formatCents(attempt.amountCents)}
+                </output>
+              </p>
+              <p
+                role="status"
+                className={
+                  cartChanged
+                    ? "mt-4 rounded-xl border border-honey-ink/25 bg-honey-soft px-4 py-3 text-sm font-medium text-honey-ink"
+                    : "sr-only"
+                }
+              >
+                {cartChanged ? CART_CHANGED_MESSAGE : ""}
+              </p>
+              <button
+                type="button"
+                onClick={complete}
+                disabled={busy !== null}
+                className="btn-primary mt-5 w-full py-3 text-base"
+              >
+                {busy === "complete" ? "Charging…" : "Complete payment"}
+              </button>
+            </div>
+          </section>
+        )}
+
+        {order && (
+          <section aria-labelledby="order-heading" className="card overflow-hidden border-moss/40">
+            <div className="flex items-center gap-3 bg-moss px-6 py-4 text-white">
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6">
+                <circle cx="12" cy="12" r="11" fill="#fffcf6" />
+                <path d="m7 12.5 3.2 3.2L17 9" fill="none" stroke="var(--color-moss)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <h2
+                id="order-heading"
+                ref={orderHeading}
+                tabIndex={-1}
+                className="font-display text-xl font-semibold focus-visible:outline-white"
+              >
+                Order placed
+              </h2>
+            </div>
+            <div className="px-6 pb-6">
+              <Lines lines={order.lines} />
+              <p className="flex items-baseline justify-between border-t border-line pt-4">
+                <label htmlFor="amount-charged" className="font-semibold">
+                  Amount charged
+                </label>
+                <output id="amount-charged" className="font-display text-3xl font-semibold tabular-nums">
+                  {formatCents(order.amountCents)}
+                </output>
+              </p>
+              <p className="mt-3 text-xs text-muted">
+                Order <code className="font-mono">{order.orderId.slice(0, 8)}</code>
+              </p>
+            </div>
+          </section>
+        )}
+      </div>
     </div>
   );
 }
 
 function Lines({ lines }: { lines: PricedLine[] }) {
   return (
-    <ul className="mt-3 space-y-1">
+    <ul className="my-4 space-y-2 text-sm">
       {lines.map((line) => (
-        <li key={line.sku}>
-          {line.name} × {line.qty}, {formatCents(line.unitPriceCents)} each
+        <li key={line.sku} className="flex items-baseline justify-between gap-4">
+          <span>
+            <span className="font-medium">
+              {line.name} × {line.qty}
+            </span>
+            <span className="text-muted">, {formatCents(line.unitPriceCents)} each</span>
+          </span>
+          <span className="tabular-nums">{formatCents(line.unitPriceCents * line.qty)}</span>
         </li>
       ))}
     </ul>

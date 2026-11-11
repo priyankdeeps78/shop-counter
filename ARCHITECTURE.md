@@ -60,7 +60,7 @@ The `'use cache'` + tag design stays as it is, with a shared cache handler (Verc
 
 ## Accessibility: what I checked and how
 
-- **Structure.** Header, nav and main landmarks, a skip link, and one `h1` per page. Sections are named by their headings (**Payment preview**, **Payment queue**, **Payment in progress**, **Order placed**), so they show up as named regions.
+- **Structure.** Header, nav and main landmarks, a skip link, and one `h1` per page. The current section's nav link has `aria-current="page"`. Sections are named by their headings (**Payment preview**, **Payment queue**, **Payment in progress**, **Order placed**), so they show up as named regions.
 - **Labels.** Every field has a visible `<label>`. Amounts are `<output>` elements tied to a `<label>`, so "Cart total", "Amount due" and "Amount charged" are programmatically labelled. Quantity buttons are named per item ("Increase Gel pen"). Accessible names start with the visible text ("Add …"), which covers WCAG 2.5.3 *label in name*.
 - **Errors.** Fields get `aria-invalid`, and `aria-describedby` points at their message. Focus moves to the first invalid field, including for errors that come back from the server. Field errors come from the same `validatePayment` both client and server use, so the two always agree.
 - **Announcements.** The desk outcome and the "cart changed" message are `role="status"`. The empty-cart error is `role="alert"`. `/shop` announces the result count. After Complete, focus moves to the **Order placed** heading.
