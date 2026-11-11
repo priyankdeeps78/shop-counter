@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "next": "16.4.6",
@@ -31,5 +35,8 @@
     "tailwindcss": "4.3.3",
     "typescript": "^5",
     "vitest": "^5.1.0"
+  },
+  "engines": {
+    "node": ">=20.9"
   }
 }
