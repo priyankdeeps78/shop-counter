@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Shop counter
 
-## Getting Started
+A small shop built with Next.js 16 (App Router, Cache Components), React 19, TypeScript, Tailwind CSS 4, react-hook-form, zod, Vitest + React Testing Library, and Playwright. It has three parts:
 
-First, run the development server:
+- `/shop` and `/shop/<sku>`: a server-rendered, cached catalogue with search and sort in the URL.
+- `/desk`: the staff desk that previews and records lamp and stool payments.
+- `/checkout`: charges the cart as it was when Pay was pressed.
+
+All data is in memory and resets when the server restarts. Design notes are in [ARCHITECTURE.md](ARCHITECTURE.md).
+
+- **`validatePayment` is exported from [`lib/payments/validate-payment.ts`](lib/payments/validate-payment.ts).**
+- **Deployed URL:** _TODO_
+- **Time spent:** _TODO_
+
+## Requirements
+
+- **Node.js 22** (developed on 22.23.1; Next 16 needs at least 20.9)
+- npm (developed on 10.9)
+
+## Commands
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npx playwright install chromium   # once, for the e2e tests
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| What | Command |
+| --- | --- |
+| Dev server on http://localhost:3000 | `npm run dev` |
+| Production build and server | `npm run build && npm start` |
+| Unit and component tests (Vitest + RTL) | `npm test` |
+| End-to-end tests (Playwright) | `npm run test:e2e` |
+| Typecheck and lint | `npm run typecheck && npm run lint` |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+`npm run test:e2e` runs `next build`, starts `next start` on port 3210 (set `E2E_PORT` to change it), and runs every spec against that production server. The caching rules only hold on a production build, so the tests don't use `next dev`. Each run starts a fresh server, because tests share the in-memory store.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`next dev` caches `getCatalog()` too, but it also throws cache entries away when you edit files. Check caching on `npm run build && npm start`, where the brief's requirements apply.
 
-## Learn More
+## The three required tests
 
-To learn more about Next.js, take a look at the following resources:
+| # | Test | File |
+| --- | --- | --- |
+| 1 | Divergence: pay for a notebook, add a pen, Amount due stays $15 with the warning shown, and the order is the notebook at $15 | `tests/unit/checkout.test.tsx` (RTL), also `tests/e2e/checkout.spec.ts` |
+| 2 | Shared validation: preview and record both reject Cushion on Maple lamp through the same `validatePayment` (a spy proves both routes call it), and a preview leaves `remaining` unchanged | `tests/unit/payments.test.ts`; the rendered form is also covered in `tests/unit/desk-form.test.tsx` |
+| 3 | URL filter: type `lamp`, the URL has `q=lamp` and only Maple lamp is listed, reload keeps it, Back shows all five | `tests/e2e/shop.spec.ts` |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The component tests stub `fetch` with the real route handlers (`tests/unit/route-fetch.ts`), so the UI tests run the actual server logic, not mocks of it.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Other tests:
+- `tests/e2e/caching.spec.ts`: the caching requirements, checked through `/api/debug/reads` on the production build.
+- `tests/e2e/a11y.spec.ts`: axe-core scans and a keyboard-only flow.
+- Unit tests for validation, replay and sold out, the checkout API, and search and sort.
 
-## Deploy on Vercel
+## Layout
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+app/
+  shop/page.tsx            static shell + request-time results (cached data)
+  shop/shop-controls.tsx   client: writes search/sort to the URL
+  shop/[sku]/page.tsx      fully static item page, real 404 for unknown skus
+  desk/                    page (server queue) + desk-form (client)
+  checkout/                page (server prices) + checkout (client cart)
+  api/                     route handlers
+lib/
+  catalog.ts               getCatalog() ('use cache' + tag) and invalidateCatalog()
+  store.ts                 the in-memory store
+  payments/validate-payment.ts
+  checkout.ts, cart.ts, shop-query.ts, money.ts, seed.ts
+tests/unit, tests/e2e
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Decisions the brief left open
+
+- **Preview when sold out** answers the same `409 { errors: { sku: "Sold out" } }` as record, instead of returning `remainingAfter: -1`.
+- **Order of checks in `POST /api/payments`:**
+  1. Validation (400).
+  2. Replay check: a repeated `externalChargeId` returns the original payment, even if the new body names another item.
+  3. Stock check (409).
+
+  Because the replay check comes before the stock check, retrying the charge that bought the last stool still gets `200 replayed`.
+- **`/api/checkout/begin`** only sells notebook, pen and case. Any other sku, including `lamp`, is `invalid_cart`, because checkout does not track stock. Repeated skus are merged into one line. Success is `201`.
+- **`/api/checkout/complete`** answers `404 { error: "attempt_not_found" }` for an unknown id, and `400 { error: "invalid_request" }` without an id.
+- **After an order**, the bought quantities leave the cart. Anything added after Pay stays.
+- The desk's Cushion option is disabled unless Cedar stool is selected. Switching to Maple lamp clears it.
+- Shop search ignores case and matches anywhere in the name. Unknown `sort` values fall back to `name`. Default values are left out of the URL.
+
+## What is missing
+
+- Testing with a real screen reader (see ARCHITECTURE.md).
+- Deployment: _TODO_
+
+## AI tools
+
+_TODO: say which tools you used, for which parts, and one place you disagreed with the output and why._

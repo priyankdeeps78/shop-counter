@@ -1,46 +1,74 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useTransition } from "react";
-import { shopHref, type Sort, type ShopQuery } from "@/lib/shop-query";
+import { useEffect, useRef, useTransition } from "react";
+import { parseShopQuery, shopHref, type ShopQuery } from "@/lib/shop-query";
 
 const SEARCH_DELAY_MS = 300;
 
 /**
  * Search and sort live in the URL; this component only writes to it.
  *
- * Each settled change is a `router.push`, so Back walks through earlier
- * filters. Typing is debounced so "lamp" is one history entry, not four.
- * The form is a plain GET form too, so it still works before hydration.
+ * - Each settled change is a `router.push`, so Back walks through earlier
+ *   filters. Typing is debounced so "lamp" is one history entry, not four.
+ * - The fields are uncontrolled and every navigation reads them from the
+ *   form. Nothing typed before hydration is lost, and the form is a plain GET
+ *   form that works without JavaScript at all.
  */
 export function ShopControls({ q, sort }: ShopQuery) {
   const router = useRouter();
   const [, startTransition] = useTransition();
+  const formRef = useRef<HTMLFormElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const lastPushedQ = useRef<string | null>(null);
+  const renderedQ = useRef(q);
 
-  const [text, setText] = useState(q);
-  // When the URL changes under us (Back/Forward), show its value. Skip the
-  // update when the URL is just catching up with what we pushed, so letters
-  // typed while that navigation was in flight are not overwritten.
-  const [syncedQ, setSyncedQ] = useState(q);
-  const [pushedQ, setPushedQ] = useState<string | null>(null);
-  if (q !== syncedQ) {
-    setSyncedQ(q);
-    if (q === pushedQ) setPushedQ(null);
-    else setText(q);
+  function readForm(): ShopQuery {
+    const data = new FormData(formRef.current ?? undefined);
+    return parseShopQuery({
+      q: String(data.get("q") ?? ""),
+      sort: String(data.get("sort") ?? ""),
+    });
   }
+
+  function navigateNow() {
+    clearTimeout(timer.current);
+    const next = readForm();
+    lastPushedQ.current = next.q;
+    startTransition(() => router.push(shopHref(next), { scroll: false }));
+  }
+
+  function navigateSoon() {
+    clearTimeout(timer.current);
+    timer.current = setTimeout(navigateNow, SEARCH_DELAY_MS);
+  }
+
+  useEffect(() => {
+    const input = searchRef.current;
+    if (!input) return;
+    if (renderedQ.current === q) {
+      // First render after hydration: apply anything typed before it.
+      if (input.value.trim() !== q) navigateSoon();
+      return;
+    }
+    renderedQ.current = q;
+    // The URL caught up with our own push: leave the field alone, the user
+    // may have typed more since.
+    if (q === lastPushedQ.current) {
+      lastPushedQ.current = null;
+      return;
+    }
+    // The URL changed from outside (Back/Forward): show it.
+    input.value = q;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only URL changes should sync the field
+  }, [q]);
 
   useEffect(() => () => clearTimeout(timer.current), []);
 
-  function navigate(next: ShopQuery) {
-    clearTimeout(timer.current);
-    const href = shopHref(next);
-    setPushedQ(next.q.trim());
-    startTransition(() => router.push(href, { scroll: false }));
-  }
-
   return (
     <form
+      ref={formRef}
       role="search"
       aria-label="Filter items"
       action="/shop"
@@ -48,7 +76,7 @@ export function ShopControls({ q, sort }: ShopQuery) {
       className="mt-6 flex flex-wrap items-end gap-4"
       onSubmit={(event) => {
         event.preventDefault();
-        navigate({ q: text, sort });
+        navigateNow();
       }}
     >
       <div className="flex flex-col gap-1">
@@ -56,18 +84,14 @@ export function ShopControls({ q, sort }: ShopQuery) {
           Search
         </label>
         <input
+          ref={searchRef}
           id="shop-search"
           name="q"
           type="search"
-          value={text}
+          defaultValue={q}
           autoComplete="off"
           className="rounded border border-stone-400 px-2 py-1"
-          onChange={(event) => {
-            const value = event.target.value;
-            setText(value);
-            clearTimeout(timer.current);
-            timer.current = setTimeout(() => navigate({ q: value, sort }), SEARCH_DELAY_MS);
-          }}
+          onChange={navigateSoon}
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -75,14 +99,13 @@ export function ShopControls({ q, sort }: ShopQuery) {
           Sort
         </label>
         <select
-          // Remount when the URL's sort changes (e.g. Back) so the uncontrolled
-          // select shows it, without fighting the user's own selection.
+          // Remount when the URL's sort changes (e.g. Back) so the select shows it.
           key={sort}
           id="shop-sort"
           name="sort"
           defaultValue={sort}
           className="rounded border border-stone-400 px-2 py-1"
-          onChange={(event) => navigate({ q: text, sort: event.target.value as Sort })}
+          onChange={navigateNow}
         >
           <option value="name">Name</option>
           <option value="price-asc">Price, low to high</option>
