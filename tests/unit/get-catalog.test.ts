@@ -10,7 +10,7 @@ const nextCache = vi.hoisted(() => ({
 }));
 vi.mock("next/cache", () => nextCache);
 
-import { CATALOG_TAG, expireCatalogCache, getCatalog } from "@/server/catalog";
+import { CATALOG_TAG, expireCatalogCache, getCatalog, getCatalogItem } from "@/server/catalog";
 import { getStore, resetStore } from "@/server/store";
 import { INITIAL_CATALOG } from "../support/catalog-contract";
 
@@ -48,6 +48,19 @@ describe("getCatalog (cache-miss body)", () => {
     const catalog = await getCatalog();
     getStore().products.get("lamp")!.remaining = 0;
     expect(catalog[0].remaining).toBe(5);
+  });
+});
+
+describe("getCatalogItem", () => {
+  it("returns one product, read through the cached catalogue", async () => {
+    expect(await getCatalogItem("stool")).toStrictEqual(INITIAL_CATALOG[1]);
+    expect(nextCache.cacheTag).toHaveBeenCalledWith(CATALOG_TAG);
+  });
+
+  it("returns null for an unknown sku, matching case exactly", async () => {
+    expect(await getCatalogItem("not-a-sku")).toBeNull();
+    expect(await getCatalogItem("LAMP")).toBeNull();
+    expect(await getCatalogItem("")).toBeNull();
   });
 });
 
