@@ -10,6 +10,11 @@ export type DeskSku = (typeof DESK_SKUS)[number];
 export type CheckoutSku = (typeof CHECKOUT_SKUS)[number];
 export type Sku = (typeof SKUS)[number];
 
+/** Exact, case-sensitive check against the fixed list of catalogue skus. */
+export function isSku(value: string): value is Sku {
+  return (SKUS as readonly string[]).includes(value);
+}
+
 export type ExtraCode = "cushion";
 
 export type Extra = {

@@ -48,13 +48,27 @@ test.describe("/shop/<sku>", () => {
     }
   });
 
-  test("an unknown sku shows the not-found page, titled and not indexed", async ({ page }) => {
+  test("sku matching is exact: case variants, padding, and bad encoding are 404", async ({ request }) => {
+    for (const path of ["/shop/LAMP", "/shop/Pen", "/shop/lamp%20", "/shop/%E0%A4%A"]) {
+      expect((await request.get(path)).status(), path).toBe(404);
+    }
+  });
+
+  test("the 404 body is the server-rendered not-found page, not an empty error shell", async ({ request }) => {
+    const html = await (await request.get("/shop/not-a-sku")).text();
+    expect(html).not.toContain("__next_error__");
+    expect(html).toContain("<title>Page not found | Shop counter</title>");
+    expect(html).toMatch(/<h1[^>]*>Page not found<\/h1>/);
+    expect(html).toContain('<meta name="robots" content="noindex"/>');
+  });
+
+  test("an unknown sku shows the not-found page in the browser, titled and not indexed", async ({ page }) => {
     const response = await page.goto("/shop/not-a-sku");
     expect(response?.status()).toBe(404);
-    await expect(page.getByRole("heading", { level: 1, name: "Item not found" })).toBeVisible();
-    await expect(page).toHaveTitle("Item not found | Shop counter");
+    await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
+    await expect(page).toHaveTitle("Page not found | Shop counter");
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
-    await page.getByRole("link", { name: "See all items" }).click();
+    await page.getByRole("link", { name: "Back to the shop" }).click();
     await expect(page).toHaveURL(/\/shop$/);
   });
 
