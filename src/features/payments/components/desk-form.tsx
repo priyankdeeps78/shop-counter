@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 import { useForm, useWatch, type FieldErrors, type Resolver } from "react-hook-form";
-import { postJson, type PreviewBody, type RecordBody } from "@/features/payments/lib/payment-api";
+import type { PreviewBody, RecordBody } from "@/features/payments/lib/payment-api";
+import { postJson } from "@/lib/post-json";
 import { validatePayment } from "@/features/payments/lib/payment-validation";
 import { formatMoney } from "@/lib/format-money";
 import { formatRemaining } from "@/lib/format-stock";
