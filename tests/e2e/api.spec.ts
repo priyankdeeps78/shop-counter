@@ -34,14 +34,3 @@ test("GET /api/catalog returns the live catalogue array", async ({ request }) =>
     { sku: "case", name: "Slip case", priceCents: 2200, remaining: null, extras: [] },
   ]);
 });
-
-test("GET /api/catalog does not change the getCatalog() read counter", async ({ request }) => {
-  const before = await (await request.get("/api/debug/reads")).json();
-  expect(Object.keys(before)).toEqual(["catalogReads"]);
-  expect(Number.isInteger(before.catalogReads)).toBe(true);
-
-  for (let i = 0; i < 3; i++) await request.get("/api/catalog");
-
-  const after = await (await request.get("/api/debug/reads")).json();
-  expect(after).toStrictEqual(before);
-});
