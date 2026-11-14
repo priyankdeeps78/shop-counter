@@ -1,7 +1,13 @@
 import "server-only";
 import { PAYMENT_ERRORS, validatePayment } from "@/features/payments/lib/payment-validation";
 import { getStore, type Store } from "@/server/store";
-import type { PaymentFieldErrors, PaymentPreview, Product, ValidPayment } from "@/types/domain";
+import type {
+  Payment,
+  PaymentFieldErrors,
+  PaymentPreview,
+  Product,
+  ValidPayment,
+} from "@/types/domain";
 
 export const SOLD_OUT = "Sold out";
 
@@ -72,4 +78,54 @@ export function previewPayment(input: unknown, store: Store = getStore()): Previ
       remainingAfter: remaining === null ? null : remaining - 1,
     },
   };
+}
+
+export type RecordOutcome =
+  | { ok: true; replayed: boolean; payment: Payment }
+  | PaymentRejection;
+
+/**
+ * Records a staff payment, at most once per `externalChargeId`.
+ *
+ * 1. Validates with the shared `validatePayment` (never trusts that a preview ran).
+ * 2. A charge id seen before is a replay: returns the original payment as stored
+ *    (its own sku, total, email) and changes nothing — even if this request names
+ *    a different item, and even if the item has sold out since.
+ * 3. A new charge is priced from the live store; finite stock at 0 is "Sold out".
+ * 4. Otherwise takes exactly 1 off finite stock, stores the payment by charge id,
+ *    and appends it to the queue.
+ *
+ * Steps 2–4 run synchronously with no `await`, so within this one Node.js
+ * process no other request can interleave between the replay check, the stock
+ * check, the decrement, and the save. That does not hold across processes or
+ * serverless instances, which each have their own store (see ARCHITECTURE.md).
+ *
+ * The caller expires the catalogue cache when `replayed` is false.
+ */
+export function recordPayment(input: unknown, store: Store = getStore()): RecordOutcome {
+  const validation = validatePayment(input);
+  if (!validation.ok) return { ok: false, reason: "invalid", errors: validation.errors };
+  const request = validation.value;
+
+  // --- critical section: synchronous from here to the return -----------------
+  const original = store.paymentsByChargeId.get(request.externalChargeId);
+  if (original) return { ok: true, replayed: true, payment: { ...original } };
+
+  const quote = quotePayment(store, request);
+  if (!quote.ok) return quote;
+
+  const payment: Payment = Object.freeze({
+    email: request.email,
+    sku: request.sku,
+    itemName: quote.product.name,
+    extraCode: request.extraCode,
+    externalChargeId: request.externalChargeId,
+    totalCents: quote.totalCents,
+  });
+  if (quote.product.remaining !== null) quote.product.remaining -= 1;
+  store.paymentsByChargeId.set(payment.externalChargeId, payment);
+  store.paymentQueue.push(payment);
+  // --- end of critical section ------------------------------------------------
+
+  return { ok: true, replayed: false, payment: { ...payment } };
 }
