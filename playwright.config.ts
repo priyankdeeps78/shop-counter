@@ -16,7 +16,21 @@ export default defineConfig({
     baseURL,
     trace: "retain-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+      testIgnore: /sold-out\.spec\.ts/,
+    },
+    // Selling an item out cannot be undone in this server process, so that spec
+    // runs last, after every other spec has finished.
+    {
+      name: "sold-out",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: /sold-out\.spec\.ts/,
+      dependencies: ["chromium"],
+    },
+  ],
   webServer: {
     command: `npm run build && npx next start --hostname 127.0.0.1 --port ${port}`,
     url: baseURL + "/shop",
