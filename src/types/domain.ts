@@ -93,14 +93,14 @@ export type SnapshotLine = {
 /** An immutable checkout attempt: the cart as it was when Pay was pressed. */
 export type CheckoutAttempt = {
   attemptId: string;
-  lines: readonly SnapshotLine[];
+  lines: readonly Readonly<SnapshotLine>[];
   amountCents: number;
 };
 
 export type Order = {
   orderId: string;
   attemptId: string;
-  lines: readonly SnapshotLine[];
+  lines: readonly Readonly<SnapshotLine>[];
   amountCents: number;
 };
 
