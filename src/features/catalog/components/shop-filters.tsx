@@ -1,7 +1,8 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useTransition } from "react";
+import { LoadingStatus } from "@/components/loading";
 import {
   SORT_OPTIONS,
   buildShopSearch,
@@ -34,6 +35,7 @@ type Props = {
 export function ShopFilters({ q, sort }: Props) {
   const router = useRouter();
   const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
   const searchRef = useRef<HTMLInputElement>(null);
   const sortRef = useRef<HTMLSelectElement>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -61,7 +63,9 @@ export function ShopFilters({ q, sort }: Props) {
         q: nextQ,
         sort: nextSort,
       });
-      router[mode](search ? `${pathname}?${search}` : pathname, { scroll: false });
+      startTransition(() => {
+        router[mode](search ? `${pathname}?${search}` : pathname, { scroll: false });
+      });
     },
     [router, pathname],
   );
@@ -120,10 +124,10 @@ export function ShopFilters({ q, sort }: Props) {
         event.preventDefault();
         commitSearch();
       }}
-      className="flex flex-col gap-4 sm:flex-row sm:items-end"
+      className="filter-bar"
     >
-      <div className="flex flex-1 flex-col gap-1">
-        <label htmlFor="shop-search" className="text-sm font-medium">
+      <div className="filter-field">
+        <label htmlFor="shop-search">
           Search
         </label>
         <input
@@ -141,11 +145,12 @@ export function ShopFilters({ q, sort }: Props) {
             commitSearch();
             searchEntryPushed.current = false;
           }}
-          className="rounded-md border border-border bg-surface px-3 py-2"
+          placeholder="Find an item…"
+          className="field-control search-control"
         />
       </div>
-      <div className="flex flex-col gap-1">
-        <label htmlFor="shop-sort" className="text-sm font-medium">
+      <div className="filter-field">
+        <label htmlFor="shop-sort">
           Sort
         </label>
         <select
@@ -157,7 +162,7 @@ export function ShopFilters({ q, sort }: Props) {
             navigate("push");
             searchEntryPushed.current = false;
           }}
-          className="rounded-md border border-border bg-surface px-3 py-2"
+          className="field-control"
         >
           {SORT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -166,6 +171,7 @@ export function ShopFilters({ q, sort }: Props) {
           ))}
         </select>
       </div>
+      {isPending && <div className="filter-progress"><LoadingStatus>Updating results…</LoadingStatus></div>}
     </form>
   );
 }

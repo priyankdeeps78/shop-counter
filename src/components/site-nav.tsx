@@ -10,7 +10,7 @@ export function SiteNav() {
 
   return (
     <nav aria-label="Main">
-      <ul className="flex flex-wrap gap-1">
+      <ul className="main-nav">
         {NAV_LINKS.map((link) => {
           const active = isActivePath(pathname, link.href);
           return (
@@ -18,9 +18,7 @@ export function SiteNav() {
               <Link
                 href={link.href}
                 aria-current={active ? "page" : undefined}
-                className={`block rounded-md px-3 py-2 text-sm font-medium underline-offset-4 hover:underline ${
-                  active ? "bg-foreground text-background" : "text-foreground"
-                }`}
+                className="nav-link"
               >
                 {link.label}
               </Link>

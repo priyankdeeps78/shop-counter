@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { QueueLoading } from "@/components/loading";
 import { DeskForm, type DeskItem } from "@/features/payments/components/desk-form";
 import { PaymentQueue } from "@/features/payments/components/payment-queue";
 import { getCatalog } from "@/server/catalog";
@@ -31,12 +32,18 @@ export default async function DeskPage() {
   );
 
   return (
-    <section aria-labelledby="page-heading" className="space-y-8">
-      <h1 id="page-heading" className="text-2xl font-semibold">
-        Desk
-      </h1>
+    <section aria-labelledby="page-heading" className="workspace enter">
+      <header className="workspace-intro">
+        <div>
+          <h1 id="page-heading" className="display page-title">Desk</h1>
+          <p>Review and record payments for the shop’s stock-limited items.</p>
+        </div>
+        <a className="button button-secondary" href="#payment-queue">
+          View payment queue <span aria-hidden="true">↓</span>
+        </a>
+      </header>
       <DeskForm items={items} />
-      <Suspense fallback={<p className="text-sm text-muted">Loading the payment queue…</p>}>
+      <Suspense fallback={<QueueLoading />}>
         <LiveQueue />
       </Suspense>
     </section>

@@ -26,9 +26,9 @@ export default async function ProductPage({ params }: PageProps<"/shop/[sku]">) 
   if (!product) notFound();
 
   return (
-    <div className="space-y-6">
-      <Link href="/shop" className="text-sm font-medium text-accent underline underline-offset-4">
-        Back to the shop
+    <div className="detail-page">
+      <Link href="/shop" className="back-link">
+        <span aria-hidden="true">←</span> Back to the shop
       </Link>
       <ProductDetails product={product} />
     </div>
