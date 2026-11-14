@@ -8,6 +8,10 @@ A small Next.js project with a server-rendered catalogue, a staff payment desk, 
 - **Desk:** Preview and record payments, prevent duplicate charges, and view the Payment queue.
 - **Checkout:** Edit your cart, start a payment using prices calculated by the server, and complete the order at the original amount, even if you change your cart afterwards.
 
+## Design scope
+
+The brief scoped the design to a clear layout. I added a few visual touches, including a hero image and product photos. The images were converted to WebP and are served directly, with Next.js image optimization disabled.
+
 ## Run locally
 
 Requires **Node.js 22** and npm.
