@@ -4,40 +4,24 @@ export function LoadingStatus({ children }: { children: string }) {
   return <span role="status" className="loading-status">{children}</span>;
 }
 
-export function CatalogueLoading() {
+export function CatalogueLoading({ children = "Loading the catalogue…" }: { children?: string }) {
   return (
-    <div className="catalogue-loading">
-      <div className="filter-bar" aria-hidden="true">
-        <div className="filter-field">
+    <p role="status" className="catalogue-grid-loading">
+      <span className="catalogue-loader-mark" aria-hidden="true" />
+      <span>{children}</span>
+    </p>
+  );
+}
+
+export function CatalogueFiltersLoading() {
+  return (
+    <div className="filter-bar" aria-hidden="true">
+      {["search", "sort"].map((field) => (
+        <div key={field} className="filter-field">
           <span className="skeleton skeleton-label" />
           <span className="skeleton skeleton-control" />
         </div>
-        <div className="filter-field">
-          <span className="skeleton skeleton-label" />
-          <span className="skeleton skeleton-control" />
-        </div>
-      </div>
-      <p role="status" className="catalogue-loading-status">
-        <span className="catalogue-loader-mark" aria-hidden="true">
-          <span className="wordmark-icon" />
-        </span>
-        Loading the catalogue…
-      </p>
-      <div className="product-grid" aria-hidden="true">
-        {[0, 1, 2, 3, 4].map((index) => (
-          <div key={index} className="product-card product-skeleton">
-            <span className="skeleton product-media" />
-            <div className="product-card-info">
-              <span className="skeleton thin-line" />
-              <span className="skeleton short-line" />
-              <div className="product-card-footer">
-                <span className="skeleton short-line" />
-                <span className="skeleton skeleton-arrow" />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      ))}
     </div>
   );
 }

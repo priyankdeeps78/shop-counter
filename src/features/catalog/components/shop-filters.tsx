@@ -1,8 +1,8 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useTransition } from "react";
-import { LoadingStatus } from "@/components/loading";
+import { useCallback, useEffect, useRef, useTransition, type ReactNode } from "react";
+import { CatalogueLoading } from "@/components/loading";
 import {
   SORT_OPTIONS,
   buildShopSearch,
@@ -17,6 +17,7 @@ type Props = {
   q: string;
   /** `sort` as the server read it from the URL. */
   sort: SortKey;
+  children?: ReactNode;
 };
 
 /**
@@ -32,7 +33,7 @@ type Props = {
  * refs. That keeps text typed before hydration, and avoids fighting the user's
  * typing while a navigation is still in flight.
  */
-export function ShopFilters({ q, sort }: Props) {
+export function ShopFilters({ q, sort, children }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
@@ -114,64 +115,69 @@ export function ShopFilters({ q, sort }: Props) {
   useEffect(() => () => clearTimeout(debounceTimer.current), []);
 
   return (
-    // A plain GET form, so Enter still filters if JavaScript has not loaded yet.
-    <form
-      role="search"
-      aria-label="Catalogue"
-      action={pathname}
-      method="get"
-      onSubmit={(event) => {
-        event.preventDefault();
-        commitSearch();
-      }}
-      className="filter-bar"
-    >
-      <div className="filter-field">
-        <label htmlFor="shop-search">
-          Search
-        </label>
-        <input
-          ref={searchRef}
-          id="shop-search"
-          name="q"
-          type="search"
-          defaultValue={q}
-          autoComplete="off"
-          onChange={() => {
-            clearTimeout(debounceTimer.current);
-            debounceTimer.current = setTimeout(commitSearch, SEARCH_DEBOUNCE_MS);
-          }}
-          onBlur={() => {
-            commitSearch();
-            searchEntryPushed.current = false;
-          }}
-          placeholder="Find an item…"
-          className="field-control search-control"
-        />
+    <>
+      {/* A plain GET form, so Enter still filters if JavaScript has not loaded yet. */}
+      <form
+        role="search"
+        aria-label="Catalogue"
+        action={pathname}
+        method="get"
+        onSubmit={(event) => {
+          event.preventDefault();
+          commitSearch();
+        }}
+        className="filter-bar"
+      >
+        <div className="filter-field">
+          <label htmlFor="shop-search">
+            Search
+          </label>
+          <input
+            ref={searchRef}
+            id="shop-search"
+            name="q"
+            type="search"
+            defaultValue={q}
+            autoComplete="off"
+            onChange={() => {
+              clearTimeout(debounceTimer.current);
+              debounceTimer.current = setTimeout(commitSearch, SEARCH_DEBOUNCE_MS);
+            }}
+            onBlur={() => {
+              commitSearch();
+              searchEntryPushed.current = false;
+            }}
+            placeholder="Find an item…"
+            className="field-control search-control"
+          />
+        </div>
+        <div className="filter-field">
+          <label htmlFor="shop-sort">
+            Sort
+          </label>
+          <select
+            ref={sortRef}
+            id="shop-sort"
+            name="sort"
+            defaultValue={sort}
+            onChange={() => {
+              navigate("push");
+              searchEntryPushed.current = false;
+            }}
+            className="field-control"
+          >
+            {SORT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </form>
+      <div className="catalogue-grid-region" data-pending={isPending}>
+        <div className="catalogue-grid-content" inert={isPending}>{children}</div>
+        {isPending && <CatalogueLoading>Updating results…</CatalogueLoading>}
       </div>
-      <div className="filter-field">
-        <label htmlFor="shop-sort">
-          Sort
-        </label>
-        <select
-          ref={sortRef}
-          id="shop-sort"
-          name="sort"
-          defaultValue={sort}
-          onChange={() => {
-            navigate("push");
-            searchEntryPushed.current = false;
-          }}
-          className="field-control"
-        >
-          {SORT_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      {isPending && <div className="filter-progress"><LoadingStatus>Updating results…</LoadingStatus></div>}
-    </form>
+    </>
   );
 }

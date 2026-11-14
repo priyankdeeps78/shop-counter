@@ -6,7 +6,7 @@ A small Next.js project with a server-rendered catalogue, a staff payment desk, 
 
 - **Shop:** Browse products, search and sort using URL parameters, and see item details and stock.
 - **Desk:** Preview and record payments, prevent duplicate charges, and view the Payment queue.
-- **Checkout:** Edit a cart, start a payment with a server-priced snapshot, and complete the order for that original amount—even if the cart changes afterwards.
+- **Checkout:** Edit your cart, start a payment using prices calculated by the server, and complete the order at the original amount, even if you change your cart afterwards.
 
 ## Run locally
 
@@ -43,7 +43,7 @@ On Vercel, different requests may use different serverless instances, each with 
 
 - I used Claude Code during development, mainly to help with implementing components and API routes, debugging Next.js caching behaviour, and writing tests.
 
-I reviewed the implementation against the requirements, made decisions around server/client rendering, caching, and payment handling, and verified the important flows using a production build.
+- I reviewed the implementation against the requirements, made decisions around server/client rendering, caching, and payment handling, and verified the important flows using a production build.
 
 - One area where I didn't simply follow the initial suggestions was **caching**. I considered static rendering and time-based revalidation, but chose Next.js `use cache` with cache tags because the catalogue needed to be cached across requests while still showing updated stock immediately after a payment.
 
