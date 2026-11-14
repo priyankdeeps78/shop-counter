@@ -1,6 +1,6 @@
 # Shop Counter
 
-A small Next.js take-home project with a server-rendered catalogue, a staff payment desk, and a checkout that keeps the amount due fixed after Pay. Data is stored in memory, with no database or payment provider.
+A small Next.js project with a server-rendered catalogue, a staff payment desk, and a checkout that keeps the amount due fixed after Pay. Data is stored in memory, with no database or payment provider.
 
 ## What it does
 
