@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SiteNav } from "@/components/site-nav";
 
@@ -24,5 +25,21 @@ describe("SiteNav", () => {
     render(<SiteNav />);
     expect(screen.getByRole("link", { name: "Shop" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Desk" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("opens the mobile disclosure and returns focus to the toggle on Escape", async () => {
+    const user = userEvent.setup();
+    render(<SiteNav />);
+    const toggle = screen.getByRole("button", { name: "Open menu" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await user.tab();
+    expect(screen.getByRole("link", { name: "Shop" })).toHaveFocus();
+
+    await user.keyboard("{Escape}");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveFocus();
   });
 });

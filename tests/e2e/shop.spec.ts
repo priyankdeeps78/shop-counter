@@ -18,6 +18,28 @@ async function typeSearch(page: Page, text: string) {
 }
 
 test.describe("/shop", () => {
+  test("small screens show one card per row and have a collapsible navigation", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.goto("/shop");
+    const items = productList(page).getByRole("listitem");
+    await expect(items).toHaveCount(5);
+    const cardLeftPositions = await items.evaluateAll((cards) => cards.map((card) => card.getBoundingClientRect().left));
+    expect(new Set(cardLeftPositions).size).toBe(1);
+
+    const toggle = page.getByRole("button", { name: "Open menu" });
+    const nav = page.getByRole("navigation", { name: "Main" });
+    await expect(nav).toBeHidden();
+    await toggle.click();
+    await expect(nav).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(toggle).toBeFocused();
+    await expect(nav).toBeHidden();
+    await toggle.click();
+    await nav.getByRole("link", { name: "Desk" }).click();
+    await expect(page).toHaveURL(/\/desk$/);
+    await expect(nav).toBeHidden();
+  });
+
   // Required test 3: URL filter.
   test("search lives in ?q=, survives reload, and Back returns to all five", async ({ page }) => {
     await page.goto("/shop");

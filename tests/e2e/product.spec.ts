@@ -74,9 +74,12 @@ test.describe("/shop/<sku>", () => {
 
   test("the shop links to each item page and the item page links back", async ({ page }) => {
     await page.goto("/shop");
+    await page.getByRole("link", { name: "Browse the collection" }).click();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
     await page.getByRole("link", { name: "Cedar stool" }).click();
     await expect(page).toHaveURL(/\/shop\/stool$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Cedar stool");
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
     await expect(page).toHaveTitle("Cedar stool | Shop counter");
     await page.getByRole("link", { name: "Back to the shop" }).click();
     await expect(page).toHaveURL(/\/shop$/);
