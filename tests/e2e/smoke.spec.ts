@@ -28,4 +28,5 @@ test("an unknown route answers 404 with the not-found page", async ({ request, p
   expect(response.status()).toBe(404);
   await page.goto("/no-such-page");
   await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
+  await expect(page).toHaveTitle("Page not found | Shop counter");
 });

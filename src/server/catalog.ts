@@ -53,6 +53,15 @@ export async function getCatalog(): Promise<Product[]> {
 }
 
 /**
+ * One product from the cached catalogue, or `null` for an unknown sku. It reads
+ * through `getCatalog()`, so detail pages share the listing's cache entry and
+ * looking up a missing sku costs no extra read.
+ */
+export async function getCatalogItem(sku: string): Promise<Product | null> {
+  return (await getCatalog()).find((product) => product.sku === sku) ?? null;
+}
+
+/**
  * Expires every cache entry tagged `catalog`, including prerendered shop pages.
  * `{ expire: 0 }` means no stale copy is ever served: the next request blocks
  * on a fresh `getCatalog()` run. Call after a stock-changing write, from a
