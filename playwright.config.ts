@@ -1,31 +1,28 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const PORT = Number(process.env.E2E_PORT ?? 3210);
+const port = Number(process.env.E2E_PORT ?? 3100);
+const baseURL = `http://127.0.0.1:${port}`;
 
-/**
- * End-to-end tests run against a production build (`next build` + `next start`),
- * because the caching requirements only hold there: `next dev` re-renders
- * on every request.
- *
- * The store is in memory and shared by every test, so tests run one at a time
- * against a fresh server, and each test only asserts on changes it causes.
- */
+// The app keeps all state in one server process, so browser tests run serially
+// against a single fresh production server (`next build` + `next start`).
 export default defineConfig({
   testDir: "tests/e2e",
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
+  retries: 0,
   reporter: process.env.CI ? "github" : "list",
   use: {
-    baseURL: `http://localhost:${PORT}`,
+    baseURL,
     trace: "retain-on-failure",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: `npm run build && npx next start -p ${PORT}`,
-    url: `http://localhost:${PORT}/api/debug/reads`,
+    command: `npm run build && npx next start --hostname 127.0.0.1 --port ${port}`,
+    url: baseURL + "/shop",
     reuseExistingServer: false,
     timeout: 240_000,
+    stdout: "ignore",
+    stderr: "pipe",
   },
 });
