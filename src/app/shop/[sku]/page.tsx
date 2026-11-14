@@ -19,6 +19,8 @@ export async function generateMetadata({ params }: PageProps<"/shop/[sku]">): Pr
 
 // No <Suspense> around this page: the sku check and `notFound()` run before any
 // HTML is sent, which is what makes an unknown sku answer HTTP 404, not 200.
+// Unknown skus normally never get here: `src/proxy.ts` sends them to the
+// server-rendered 404 page first. This check stays as the safety net.
 export default async function ProductPage({ params }: PageProps<"/shop/[sku]">) {
   const product = await getCatalogItem((await params).sku);
   if (!product) notFound();
