@@ -34,21 +34,23 @@ export default function ShopPage({ searchParams }: PageProps<"/shop">) {
   return (
     <section aria-labelledby="page-heading" className="shop-page">
       <div className="shop-hero">
+        <picture className="hero-media">
+          <source media="(max-width: 42rem)" srcSet="/shop-images/everyday-mobile.webp" />
+          <Image src="/shop-images/collection.webp" alt="" fill unoptimized loading="eager" fetchPriority="high" />
+        </picture>
         <div className="hero-copy enter">
-          <h1 id="page-heading" className="page-kicker">Shop</h1>
-          <p className="display hero-title">Objects for<br />every day.</p>
-          <p className="hero-description">Lighting, furniture, and stationery for everyday spaces.</p>
-          <a href="#collection" className="button button-primary hero-link">
+          <h1 id="page-heading" className="hero-title">
+            Good things<br />{" "}for every day<span className="hero-period">.</span>
+          </h1>
+          <p className="hero-description">Warm light, solid wood, and stationery worth keeping close.</p>
+          <a href="#collection" className="button hero-link">
             Browse the collection <span aria-hidden="true">↓</span>
           </a>
         </div>
-        <div className="hero-media">
-          <Image src="/shop-images/collection.webp" alt="" fill unoptimized preload />
-        </div>
       </div>
-      <section id="collection" aria-labelledby="collection-heading" className="collection-section">
+      <section id="collection" tabIndex={-1} aria-labelledby="collection-heading" className="collection-section">
         <header className="collection-heading">
-          <h2 id="collection-heading" className="display section-title">The collection</h2>
+          <h2 id="collection-heading" className="section-title">The collection</h2>
         </header>
         <Suspense fallback={<CatalogueLoading />}>
           <ShopResults searchParams={searchParams} />

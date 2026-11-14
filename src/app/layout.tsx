@@ -20,7 +20,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           Skip to main content
         </a>
-        <header className="site-header">
+        <header id="site-top" tabIndex={-1} className="site-header">
           <div className="site-container header-inner">
             <Link href="/shop" className="wordmark">
               <span className="wordmark-icon" aria-hidden="true" />
