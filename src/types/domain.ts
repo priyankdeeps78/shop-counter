@@ -15,6 +15,10 @@ export function isSku(value: string): value is Sku {
   return (SKUS as readonly string[]).includes(value);
 }
 
+export function isCheckoutSku(value: Sku): value is CheckoutSku {
+  return (CHECKOUT_SKUS as readonly Sku[]).includes(value);
+}
+
 export type ExtraCode = "cushion";
 
 export type Extra = {

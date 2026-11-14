@@ -2,14 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CheckoutClient, type CheckoutProduct } from "@/features/checkout/components/checkout-client";
 import { getCatalog } from "@/server/catalog";
-import { CHECKOUT_SKUS, type CheckoutSku } from "@/types/domain";
+import { isCheckoutSku } from "@/types/domain";
 
 export const metadata: Metadata = {
   title: "Checkout",
   description: "Buy field notebooks, gel pens, and slip cases.",
 };
-
-const isCheckoutSku = (sku: string): sku is CheckoutSku => (CHECKOUT_SKUS as readonly string[]).includes(sku);
 
 export default async function CheckoutPage() {
   // Names and unit prices from the cached catalogue; the cart itself lives in the browser.
