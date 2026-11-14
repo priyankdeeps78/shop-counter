@@ -26,12 +26,8 @@ function hasOneAtWithTextOnBothSides(email: string): boolean {
   return parts.length === 2 && parts[0].length > 0 && parts[1].length > 0;
 }
 
-/**
- * The Zod schema behind `validatePayment`. Exported so the desk form can use it
- * with a resolver; servers must call `validatePayment`, which also guards
- * non-object input.
- */
-export const paymentSchema = z
+/** The Zod schema behind `validatePayment`. Callers use `validatePayment`, which also guards non-object input. */
+const paymentSchema = z
   .object({
     // Trimmed before the check, lowercased after it.
     email: z

@@ -38,14 +38,6 @@ export type Product = {
 
 export type PaymentField = "email" | "sku" | "externalChargeId" | "extraCode";
 
-/** Raw input to `validatePayment`. Values come from the client and are unchecked. */
-export type PaymentInput = {
-  email?: unknown;
-  sku?: unknown;
-  externalChargeId?: unknown;
-  extraCode?: unknown;
-};
-
 /** A payment input that passed validation, with the email trimmed and lowercased. */
 export type ValidPayment = {
   email: string;
