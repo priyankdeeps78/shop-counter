@@ -1,60 +1,56 @@
-# Shop counter
+# Shop Counter
 
-A small shop built with the Next.js App Router: a server-rendered catalogue, a
-staff desk that records payments, and a checkout that charges the cart as it
-was when **Pay** was pressed. All data lives in memory in the server process and
-resets when the server restarts.
+A small Next.js take-home project with a server-rendered catalogue, a staff payment desk, and a checkout that keeps the amount due fixed after Pay. Data is stored in memory, with no database or payment provider.
 
-> Work in progress. Features are added milestone by milestone; see
-> [`docs/IMPLEMENTATION_PROGRESS.md`](docs/IMPLEMENTATION_PROGRESS.md) for what is
-> done and verified so far.
+## What it does
 
-## Prerequisites
+- **Shop:** Browse products, search and sort using URL parameters, and see item details and stock.
+- **Desk:** Preview and record payments, prevent duplicate charges, and view the Payment queue.
+- **Checkout:** Edit a cart, start a payment with a server-priced snapshot, and complete the order for that original amount—even if the cart changes afterwards.
 
-- Node.js 22 (see `.nvmrc`; `nvm use` picks it up)
-- npm (lockfile: `package-lock.json`)
-- Playwright's Chromium for the browser tests: `npx playwright install chromium`
+## Run locally
 
-## Commands
+Requires **Node.js 22** and npm.
 
-| Task                         | Command             |
-| ---------------------------- | ------------------- |
-| Install                      | `npm install`       |
-| Dev server                   | `npm run dev`       |
-| Production build             | `npm run build`     |
-| Start production server      | `npm run start`     |
-| Lint                         | `npm run lint`      |
-| Type-check                   | `npm run typecheck` |
-| Unit and component tests     | `npm test`          |
-| Browser tests (Playwright)   | `npm run test:e2e`  |
-
-`npm run test:e2e` builds the app and starts it with `next start` on port 3100
-(override with `E2E_PORT`), then runs the tests serially against that one
-process, because all state is in memory.
-
-## Project layout
-
-```text
-src/app/          routes (pages and API route handlers)
-src/components/   shared layout components
-src/lib/          small shared helpers
-tests/unit/       Vitest, node environment
-tests/component/  Vitest + React Testing Library, jsdom
-tests/e2e/        Playwright against a production build
+```bash
+npm ci
+npm run dev
 ```
 
-## Shared payment validation
+Open `http://localhost:3000`. To test a production build locally, run `npm run build` followed by `npm run start`.
 
-`validatePayment` — path recorded here once it is implemented (Milestone 07).
+```bash
+npm run lint
+npm run typecheck
+npm test
+npx playwright install chromium # one-time setup
+npm run test:e2e
+```
 
-## Architecture
+Playwright uses a production build on port 3100. Tests run sequentially because payments change stock.
 
-See `ARCHITECTURE.md` (written in Milestone 14).
+The shared payment validator, `validatePayment`, is in [`src/features/payments/lib/payment-validation.ts`](src/features/payments/lib/payment-validation.ts).
 
-## Time spent
+Search and sort use URL parameters (`q` and `sort`) and run on the server **after** the shared cached read, so each search doesn't create another cache entry. `/api/catalog` reads the live store directly. See [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
-To be completed at the end with the actual total.
+## Local vs deployed
+
+Locally, one server process holds the data: recorded payments appear in the **Payment queue**, and stock updates consistently.
+
+On Vercel, different requests may use different serverless instances, each with separate memory. I noticed payments recorded successfully but missing from the queue on a later load; stock can also appear inconsistent. That is expected here. A real app would need shared storage, but the brief explicitly leaves that out.
 
 ## AI tools
 
-To be completed at the end.
+- I used **Claude Code** to help with implementation, debugging, and writing tests. I reviewed the generated code, checked it against the brief, and made decisions about the overall architecture.
+
+- One area where I didn't simply follow the initial suggestions was **caching**. I considered static rendering and time-based revalidation, but chose Next.js `use cache` with cache tags because the catalogue needed to be cached across requests while still showing updated stock immediately after a payment.
+
+- I also chose to keep search and sorting on the server, even though client-side filtering would have been simpler. This keeps the URL, server-rendered results, reloads, and browser history consistent.
+
+- Another decision was disabling Next.js `partialPrefetching`. During production testing, it caused the first request after cache invalidation to show stale stock, and some unknown product URLs returned HTTP 200 instead of 404. I kept it disabled because correctness mattered more than following the framework's default recommendation.
+
+## Submission
+
+- **GitHub:** https://github.com/priyankdeeps78/shop-counter
+- **Live demo:** https://shopdesk-zeta.vercel.app/shop
+- **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)
