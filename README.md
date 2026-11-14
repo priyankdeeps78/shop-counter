@@ -41,7 +41,9 @@ On Vercel, different requests may use different serverless instances, each with 
 
 ## AI tools
 
-- I used **Claude Code** to help with implementation, debugging, and writing tests. I reviewed the generated code, checked it against the brief, and made decisions about the overall architecture.
+- I used Claude Code during development, mainly to help with implementing components and API routes, debugging Next.js caching behaviour, and writing tests.
+
+I reviewed the implementation against the requirements, made decisions around server/client rendering, caching, and payment handling, and verified the important flows using a production build.
 
 - One area where I didn't simply follow the initial suggestions was **caching**. I considered static rendering and time-based revalidation, but chose Next.js `use cache` with cache tags because the catalogue needed to be cached across requests while still showing updated stock immediately after a payment.
 

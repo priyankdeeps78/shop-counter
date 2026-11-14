@@ -1,20 +1,21 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useForm, useWatch, type FieldErrors, type Resolver } from "react-hook-form";
+import { PanelHeading } from "@/components/workspace-panel";
+import { PaymentPreview } from "@/features/payments/components/payment-preview";
 import type { PreviewBody, RecordBody } from "@/features/payments/lib/payment-api";
 import { postJson } from "@/lib/post-json";
 import { validatePayment } from "@/features/payments/lib/payment-validation";
 import { formatMoney } from "@/lib/format-money";
-import { formatRemaining } from "@/lib/format-stock";
 import type {
   DeskSku,
   Extra,
   ExtraCode,
   PaymentField,
   PaymentFieldErrors,
-  PaymentPreview,
+  PaymentPreview as Preview,
 } from "@/types/domain";
 
 export type DeskItem = { sku: DeskSku; name: string; extras: readonly Extra[] };
@@ -59,8 +60,18 @@ type Status = { tone: "success" | "error"; text: string } | null;
 export function DeskForm({ items }: { items: readonly DeskItem[] }) {
   const router = useRouter();
   const ids = useId();
-  const [preview, setPreview] = useState<PaymentPreview | null>(null);
+  const [preview, setPreview] = useState<Preview | null>(null);
+  const [previewPending, setPreviewPending] = useState(false);
   const [status, setStatus] = useState<Status>(null);
+  const previewButton = useRef<HTMLButtonElement>(null);
+  const previewHeading = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    if (!preview) return;
+    if (document.activeElement === previewButton.current || document.activeElement === document.body) {
+      previewHeading.current?.focus();
+    }
+  }, [preview]);
 
   const {
     register,
@@ -96,6 +107,8 @@ export function DeskForm({ items }: { items: readonly DeskItem[] }) {
 
   const runPreview = handleSubmit(async (values) => {
     setStatus(null);
+    setPreview(null);
+    setPreviewPending(true);
     const sent = JSON.stringify(toPayload(values));
     try {
       const body = await postJson<PreviewBody>("/api/payments/preview", toPayload(values));
@@ -105,6 +118,8 @@ export function DeskForm({ items }: { items: readonly DeskItem[] }) {
       else showServerErrors(body.errors);
     } catch {
       setStatus({ tone: "error", text: NETWORK_ERROR });
+    } finally {
+      setPreviewPending(false);
     }
   });
 
@@ -142,113 +157,116 @@ export function DeskForm({ items }: { items: readonly DeskItem[] }) {
         {errors[name]?.message}
       </p>
     ) : null;
-  const control_ = "w-full rounded-md border border-border bg-surface px-3 py-2 aria-invalid:border-red-700";
 
   return (
-    <div className="space-y-6">
-      <form onSubmit={runRecord} noValidate aria-labelledby={`${ids}-heading`} className="space-y-4">
-        <h2 id={`${ids}-heading`} className="text-lg font-semibold">
+    <div className="desk-grid">
+      <form onSubmit={runRecord} noValidate aria-labelledby={`${ids}-heading`} className="surface-panel workspace-panel desk-form">
+        <PanelHeading id={`${ids}-heading`} icon="+">
           Record a payment
-        </h2>
+        </PanelHeading>
 
-        <div className="space-y-1">
-          <label htmlFor={fieldId("email")} className="block text-sm font-medium">
-            Email
-          </label>
-          <input
-            id={fieldId("email")}
-            type="email"
-            autoComplete="email"
-            aria-invalid={errors.email ? true : undefined}
-            aria-describedby={describedBy("email")}
-            className={control_}
-            {...register("email")}
-          />
-          {fieldError("email")}
+        <div className="desk-fields">
+          <div className="desk-wide-field space-y-1">
+            <label htmlFor={fieldId("email")} className="block text-sm font-medium">
+              Email
+            </label>
+            <input
+              id={fieldId("email")}
+              type="email"
+              autoComplete="email"
+              placeholder="name@example.com"
+              aria-invalid={errors.email ? true : undefined}
+              aria-describedby={describedBy("email")}
+              className="field-control"
+              {...register("email")}
+            />
+            {fieldError("email")}
+          </div>
+
+          <div className="space-y-1">
+            <label htmlFor={fieldId("sku")} className="block text-sm font-medium">
+              Item
+            </label>
+            <select
+              id={fieldId("sku")}
+              aria-invalid={errors.sku ? true : undefined}
+              aria-describedby={describedBy("sku")}
+              className="field-control"
+              {...register("sku", {
+                // An extra the newly chosen item does not sell is cleared (lamp clears Cushion).
+                onChange: (event: { target: { value: string } }) => {
+                  const item = items.find((candidate) => candidate.sku === event.target.value);
+                  const extra = getValues("extraCode");
+                  if (extra && !item?.extras.some((candidate) => candidate.code === extra)) {
+                    setValue("extraCode", "");
+                  }
+                },
+              })}
+            >
+              <option value="">Select an item</option>
+              {items.map((item) => (
+                <option key={item.sku} value={item.sku}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+            {fieldError("sku")}
+          </div>
+
+          <div className="space-y-1">
+            <label htmlFor={fieldId("extraCode")} className="block text-sm font-medium">
+              Extra
+            </label>
+            <select
+              id={fieldId("extraCode")}
+              aria-invalid={errors.extraCode ? true : undefined}
+              aria-describedby={describedBy("extraCode")}
+              className="field-control"
+              {...register("extraCode")}
+            >
+              <option value="">None</option>
+              {extrasForItem.map((extra) => (
+                <option key={extra.code} value={extra.code}>
+                  {extra.name} (+{formatMoney(extra.priceCents)})
+                </option>
+              ))}
+            </select>
+            {fieldError("extraCode")}
+          </div>
+
+          <div className="desk-wide-field space-y-1">
+            <label htmlFor={fieldId("externalChargeId")} className="block text-sm font-medium">
+              Charge id
+            </label>
+            <input
+              id={fieldId("externalChargeId")}
+              type="text"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="ch_12345678"
+              aria-invalid={errors.externalChargeId ? true : undefined}
+              aria-describedby={describedBy("externalChargeId")}
+              className="field-control font-mono"
+              {...register("externalChargeId")}
+            />
+            {fieldError("externalChargeId")}
+          </div>
         </div>
 
-        <div className="space-y-1">
-          <label htmlFor={fieldId("sku")} className="block text-sm font-medium">
-            Item
-          </label>
-          <select
-            id={fieldId("sku")}
-            aria-invalid={errors.sku ? true : undefined}
-            aria-describedby={describedBy("sku")}
-            className={control_}
-            {...register("sku", {
-              // An extra the newly chosen item does not sell is cleared (lamp clears Cushion).
-              onChange: (event: { target: { value: string } }) => {
-                const item = items.find((candidate) => candidate.sku === event.target.value);
-                const extra = getValues("extraCode");
-                if (extra && !item?.extras.some((candidate) => candidate.code === extra)) {
-                  setValue("extraCode", "");
-                }
-              },
-            })}
-          >
-            <option value="">Select an item</option>
-            {items.map((item) => (
-              <option key={item.sku} value={item.sku}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-          {fieldError("sku")}
-        </div>
-
-        <div className="space-y-1">
-          <label htmlFor={fieldId("extraCode")} className="block text-sm font-medium">
-            Extra
-          </label>
-          <select
-            id={fieldId("extraCode")}
-            aria-invalid={errors.extraCode ? true : undefined}
-            aria-describedby={describedBy("extraCode")}
-            className={control_}
-            {...register("extraCode")}
-          >
-            <option value="">None</option>
-            {extrasForItem.map((extra) => (
-              <option key={extra.code} value={extra.code}>
-                {extra.name} (+{formatMoney(extra.priceCents)})
-              </option>
-            ))}
-          </select>
-          {fieldError("extraCode")}
-        </div>
-
-        <div className="space-y-1">
-          <label htmlFor={fieldId("externalChargeId")} className="block text-sm font-medium">
-            Charge id
-          </label>
-          <input
-            id={fieldId("externalChargeId")}
-            type="text"
-            autoComplete="off"
-            spellCheck={false}
-            placeholder="ch_12345678"
-            aria-invalid={errors.externalChargeId ? true : undefined}
-            aria-describedby={describedBy("externalChargeId")}
-            className={`${control_} font-mono`}
-            {...register("externalChargeId")}
-          />
-          {fieldError("externalChargeId")}
-        </div>
-
-        <div className="flex flex-wrap gap-3">
+        <div className="desk-actions">
           <button
             type="button"
+            ref={previewButton}
             onClick={runPreview}
             disabled={isSubmitting}
-            className="rounded-md border border-foreground px-4 py-2 font-medium disabled:opacity-50"
+            className="button button-secondary"
           >
             Preview
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="rounded-md bg-foreground px-4 py-2 font-medium text-background disabled:opacity-50"
+            className="button button-primary"
           >
             Record payment
           </button>
@@ -256,37 +274,18 @@ export function DeskForm({ items }: { items: readonly DeskItem[] }) {
 
         <p
           role="status"
-          className={`min-h-6 text-sm font-medium ${status?.tone === "error" ? "text-red-700" : "text-green-800"}`}
+          className={`desk-status text-sm font-medium ${isSubmitting ? "loading-status" : status?.tone === "error" ? "text-red-700" : "text-green-800"}`}
         >
           {isSubmitting ? "Working…" : status?.text}
         </p>
       </form>
 
-      <section
-        aria-labelledby={`${ids}-preview-heading`}
-        aria-live="polite"
-        className="space-y-2 rounded-lg border border-border bg-surface p-4"
-      >
-        <h2 id={`${ids}-preview-heading`} className="text-lg font-semibold">
-          Payment preview
-        </h2>
-        {preview ? (
-          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
-            <dt className="text-muted">Email</dt>
-            <dd className="break-all">{preview.email}</dd>
-            <dt className="text-muted">Item</dt>
-            <dd>{preview.itemName}</dd>
-            <dt className="text-muted">Extra</dt>
-            <dd>{preview.extraName ?? "None"}</dd>
-            <dt className="text-muted">Total</dt>
-            <dd>{formatMoney(preview.totalCents)}</dd>
-            <dt className="text-muted">Remaining after</dt>
-            <dd>{formatRemaining(preview.remainingAfter)}</dd>
-          </dl>
-        ) : (
-          <p className="text-sm text-muted">Press Preview to check a payment before recording it.</p>
-        )}
-      </section>
+      <PaymentPreview
+        headingId={`${ids}-preview-heading`}
+        headingRef={previewHeading}
+        preview={preview}
+        pending={previewPending}
+      />
     </div>
   );
 }

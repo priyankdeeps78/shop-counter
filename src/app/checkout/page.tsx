@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { CheckoutClient, type CheckoutProduct } from "@/features/checkout/components/checkout-client";
 import { getCatalog } from "@/server/catalog";
 import { CHECKOUT_SKUS, type CheckoutSku } from "@/types/domain";
@@ -17,10 +18,16 @@ export default async function CheckoutPage() {
   );
 
   return (
-    <section aria-labelledby="page-heading" className="space-y-6">
-      <h1 id="page-heading" className="text-2xl font-semibold">
-        Checkout
-      </h1>
+    <section aria-labelledby="page-heading" className="workspace enter">
+      <header className="workspace-intro">
+        <div>
+          <h1 id="page-heading" className="display page-title">Checkout</h1>
+          <p>Build your cart and review the amount before paying.</p>
+        </div>
+        <Link className="button button-secondary" href="/shop">
+          <span aria-hidden="true">←</span> Back to shop
+        </Link>
+      </header>
       <CheckoutClient products={products} />
     </section>
   );
