@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { getStore, type Store } from "@/server/store";
-import { CHECKOUT_SKUS, type CheckoutAttempt, type SnapshotLine } from "@/types/domain";
+import { CHECKOUT_SKUS, type CheckoutAttempt, type Order, type SnapshotLine } from "@/types/domain";
 
 /**
  * What the client may choose: which checkout items and how many. Anything else
@@ -57,5 +57,54 @@ export function attemptToJson(attempt: CheckoutAttempt) {
     attemptId: attempt.attemptId,
     lines: attempt.lines.map((line) => ({ ...line })),
     amountCents: attempt.amountCents,
+  };
+}
+
+/** Only the attempt id is read from a completion request; everything else is ignored. */
+const completeCheckoutSchema = z.object({ attemptId: z.string().min(1) });
+
+export type CompleteOutcome =
+  | { ok: true; order: Order }
+  | { ok: false; reason: "invalid" | "not_found" };
+
+/**
+ * Completes a checkout attempt, at most once. The order is built only from the
+ * stored, frozen snapshot — never from the request (any `lines`, `amountCents`
+ * or prices sent are ignored) and never from the current cart or catalogue.
+ * Completing the same attempt again returns the same order (same `orderId`).
+ * Synchronous from lookup to save, so it cannot interleave within this process.
+ */
+export function completeCheckout(
+  input: unknown,
+  store: Store = getStore(),
+  newOrderId: () => string = () => crypto.randomUUID(),
+): CompleteOutcome {
+  const parsed = completeCheckoutSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, reason: "invalid" };
+  const { attemptId } = parsed.data;
+
+  const existing = store.ordersByAttemptId.get(attemptId);
+  if (existing) return { ok: true, order: existing };
+
+  const attempt = store.attemptsById.get(attemptId);
+  if (!attempt) return { ok: false, reason: "not_found" };
+
+  const order: Order = Object.freeze({
+    orderId: newOrderId(),
+    attemptId,
+    lines: attempt.lines, // already frozen
+    amountCents: attempt.amountCents,
+  });
+  store.ordersByAttemptId.set(attemptId, order);
+  return { ok: true, order };
+}
+
+/** A plain, editable copy of an order for a response body. */
+export function orderToJson(order: Order) {
+  return {
+    orderId: order.orderId,
+    attemptId: order.attemptId,
+    lines: order.lines.map((line) => ({ ...line })),
+    amountCents: order.amountCents,
   };
 }
