@@ -129,3 +129,8 @@ export function recordPayment(input: unknown, store: Store = getStore()): Record
 
   return { ok: true, replayed: false, payment: { ...payment } };
 }
+
+/** Recorded payments in this process, oldest first, as copies. */
+export function getPaymentQueue(store: Store = getStore()): Payment[] {
+  return store.paymentQueue.map((payment) => ({ ...payment }));
+}
