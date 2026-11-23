@@ -55,8 +55,4 @@ On Vercel, different requests may use different serverless instances, each with 
 
 - Another decision was disabling Next.js `partialPrefetching`. During production testing, it caused the first request after cache invalidation to show stale stock, and some unknown product URLs returned HTTP 200 instead of 404. I kept it disabled because correctness mattered more than following the framework's default recommendation.
 
-## Submission
-
-- **GitHub:** https://github.com/priyankdeeps78/shop-counter
-- **Live demo:** https://shopdesk-zeta.vercel.app/shop
 - **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)
